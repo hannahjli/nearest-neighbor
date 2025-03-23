@@ -11,7 +11,7 @@ Using feature(s): {1, 4, 5, 3} accuracy is 91.8%\
 Using feature(s): {1, 4, 5, 3, 6} accuracy is 88.2%\
 Using feature(s): {1, 4, 5, 3, 6, 2} accuracy is 83.8%\
 \
-Large data: Strongest features {1, 35, 19} found on 3rd level of search tree.\
+Large data: Strongest features {35, 19} found on 2nd level of search tree.\
 Beginning search.\
 Using feature(s): {35} accuracy is 86.8%\
 Using feature(s): {35, 19} accuracy is 96.3%\
