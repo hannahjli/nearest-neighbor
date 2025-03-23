@@ -114,7 +114,7 @@ double leave_one_out_cross_validation (vector<vector<double>> data, vector<int> 
     double accuracy = 0;
     vector<vector<double>> temp_data = data;
 
-    if (!current_set.empty()) { //don't delete columns on the first level of search
+    if (!current_set.empty() || data.at(0).size() > 10) { //don't delete columns on the first level of search or if data is small
         vector<int> features_being_used = current_set; //we need to "delete" columns NOT being used
         temp_data = temp_delete_columns(data, features_being_used, feature_to_add);
     }
