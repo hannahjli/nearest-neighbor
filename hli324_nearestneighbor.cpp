@@ -71,7 +71,7 @@ end
 
 */
 #include <algorithm> //used for find() and transform()
-#include <vector>
+#include <vector> //used for data storage
 #include <cmath> //used for sqrt()
 #include <numeric> //used for accumulate() 
 #include <iostream> //used for cin cout
@@ -79,6 +79,7 @@ end
 #include <fstream> //used to read and write from .txt files
 #include <sstream> //used to read strings
 #include <string>
+#include <iomanip> //used for setprecision()
 
 using namespace std;
 
@@ -90,12 +91,20 @@ using namespace std;
 vector<vector<double>> temp_delete_columns(vector<vector<double>> data, vector<int> features_being_used, int f) {
     vector<vector<double>> copy = data; //use copy, so data is unaffected
     features_being_used.push_back(f);
-    for (int i = 0; i < copy.at(0).size(); i++) { //for every column of data
-        if (find(features_being_used.begin(), features_being_used.end(), i) == features_being_used.end()) {
-            for (int j = 0; j < copy.size(); j++) {
-                copy.at(j).at(i) = 0;
+    for (int i = 0; i < copy.size(); i++) {
+        for (int j = 1; j < copy.at(i).size(); j++) {
+            if (find(features_being_used.begin(), features_being_used.end(), j) == features_being_used.end()) {
+                copy.at(i).at(j) = 0;
             }
         }
+        // for (int k = 0; k < copy.at(i).size(); k++) {
+        //     if (i < 3) {
+        //         cout << copy.at(i).at(k) << " ";
+        //         if (k == copy.at(i).size() - 1) {
+        //             cout << endl;
+        //         }
+        //     }
+        // }
     }
     
     return copy;
@@ -104,15 +113,16 @@ vector<vector<double>> temp_delete_columns(vector<vector<double>> data, vector<i
 double leave_one_out_cross_validation (vector<vector<double>> data, vector<int> current_set, int feature_to_add) {
     double accuracy = 0;
     vector<vector<double>> temp_data = data;
-    if (!current_set.empty()) {
+
+    if (!current_set.empty()) { //don't delete columns on the first level of search
         vector<int> features_being_used = current_set; //we need to "delete" columns NOT being used
         temp_data = temp_delete_columns(data, features_being_used, feature_to_add);
     }
 
     int number_correctly_classified = 0;
     for (int i = 0; i < temp_data.size(); i++) { //for each row of data
-        vector<double> object_to_classify;
-        object_to_classify.insert(object_to_classify.begin(), temp_data.at(i).begin()+1, temp_data.at(i).end());
+        vector<double> object_to_classify = temp_data.at(i); //entire row
+        // object_to_classify.erase(object_to_classify.begin()); //remove 1st element
         double label_object_to_classify = temp_data.at(i).at(0); //1st column of row i
         // cout << "looping over i, at the " << i << " location" << endl;
         // cout << "The " << i << "th object is in class " << label_object_to_classify << endl;
@@ -123,8 +133,8 @@ double leave_one_out_cross_validation (vector<vector<double>> data, vector<int> 
             if (k != i) {
                 // distance = sqrt(sum((object_to_classify - data(k,2:end)).^2)); //Euclidean distance
                 double distance = 0;   
-                for (int d = 0; d < object_to_classify.size(); d++) {
-                    distance += pow((object_to_classify.at(d) - temp_data.at(k).at(d+1)), 2);
+                for (int d = 1; d < object_to_classify.size(); d++) {
+                    distance += pow((object_to_classify.at(d) - temp_data.at(k).at(d)), 2);
                 } 
                 distance = sqrt(distance);
                 if (distance < nearest_neighbor_distance) {
@@ -143,7 +153,8 @@ double leave_one_out_cross_validation (vector<vector<double>> data, vector<int> 
         }
     }
     accuracy = static_cast<double>(number_correctly_classified) / data.size();
-    cout << "accuracy: " << static_cast<double>(accuracy) << endl;
+    //cout << "number correctly classified: " << number_correctly_classified << endl;
+    //cout << "accuracy: " << static_cast<double>(accuracy) << endl;
     return accuracy;
 }
 
@@ -169,41 +180,50 @@ vector<vector<double>> read_doubles_from_file(const string file_name) {
 }
 
 void feature_search_demo(string file_name) {
-    
+
+    cout << "Beginning search." << endl;    
     vector<vector<double>> data = read_doubles_from_file(file_name); //same as data() in pseudocode
 
-    vector<int> current_set_of_features; //CHANGE SIZE DEPENDING ON FEATURES
+    vector<int> current_set_of_features; 
     for (int i = 1; i < data.at(0).size(); i++) {
-        cout << "On the " << i-1 << "th level of the search tree" << endl;
+        //cout << "On the " << i-1 << "th level of the search tree" << endl;
         int feature_to_add_at_this_level = 0;
-        double best_so_far_accuracy = 0;
-        double accuracy = 0;
+        double best_so_far_accuracy = 0.0;
         
         for (int k = 1; k < data.at(0).size(); k++) {
             if(find(current_set_of_features.begin(), current_set_of_features.end(), k) == current_set_of_features.end()) {
                 //if k is NOT in current_set (we only consider adding if k has not already been added)
-                cout << "--Considering adding the " << k << "th feature" << endl;
+                //cout << "--Considering adding the " << k << "th feature" << endl;
                 // accuracy = rand();
-                accuracy = leave_one_out_cross_validation(data, current_set_of_features, feature_to_add_at_this_level);
+                // cout << "accuracy: " << accuracy << endl;
+                double accuracy = leave_one_out_cross_validation(data, current_set_of_features, k);
                 if (accuracy > best_so_far_accuracy) {
                     best_so_far_accuracy = accuracy;
                     feature_to_add_at_this_level = k;
-                    cout << endl;
                 }
             }
         }
         current_set_of_features.push_back(feature_to_add_at_this_level);
-        cout << "set of features: " << endl;
-        for (int f = 0; f < current_set_of_features.size(); f++) {
-            cout << current_set_of_features.at(f) << " ";
+        cout << "Using feature(s): {";
+        for (int f = 0; f < current_set_of_features.size()-1; f++) {
+            cout << current_set_of_features.at(f) << ", ";
         }
-        cout << endl;
+        cout << current_set_of_features.at(current_set_of_features.size()-1) << "} accuracy is " << best_so_far_accuracy*100.0 << "%" << endl;
     }
     
 
 }
 
 int main() {
-    feature_search_demo("CS170_Small_Data__62.txt");
+    int choice = 0;
+    cout << "Enter 1 for CS170_Large_Data__31.txt or 2 for CS170_Small_Data__62.txt: ";
+    cin >> choice;
+    if (choice == 1) {
+        feature_search_demo("CS170_Large_Data__31.txt");
+    } else if (choice == 2) {
+        feature_search_demo("CS170_Small_Data__62.txt");
+    } else {
+        cout << "Invalid choice. Exiting program." << endl;
+    }
     return 0;
 }
